@@ -1,0 +1,25 @@
+services:
+  - type: web
+    name: online-quiz-system
+    runtime: docker
+    plan: free
+    autoDeploy: true
+    envVars:
+      - key: APP_NAME
+        value: Online Quiz System
+      - key: APP_ENV
+        value: production
+      - key: APP_DEBUG
+        value: false
+      - key: LOG_CHANNEL
+        value: stderr
+      - key: DB_CONNECTION
+        value: pgsql
+      - key: SESSION_DRIVER
+        value: database
+      - key: CACHE_STORE
+        value: database
+      - key: QUEUE_CONNECTION
+        value: database
+      - key: RUN_SEEDERS
+        value: false

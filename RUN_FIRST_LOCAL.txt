@@ -1,0 +1,31 @@
+ONLINE QUIZ SYSTEM - RUN FIRST LOCAL
+
+1. Open PowerShell inside this project folder.
+2. Run these commands:
+
+composer install
+npm install
+php artisan key:generate
+php artisan migrate:fresh --seed
+npm run build
+php artisan serve
+
+3. Open:
+http://127.0.0.1:8000
+
+Teacher login:
+john.smith@gmail.com
+password123
+
+Student login:
+alice.brown@gmail.com
+password123
+
+Important flow:
+Teacher: /quizzes -> Create New Quiz -> View -> Add Question -> Publish -> redirects back to /quizzes
+Student: /quizzes -> Available Quizzes -> Take Quiz -> Submit -> Result page
+
+Import sample:
+Teacher: /quizzes -> Sample Import -> download CSV
+Teacher: /quizzes -> Import Quiz -> select sample_quizzes.csv -> Import
+After import, new quizzes appear in /quizzes.
