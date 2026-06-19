@@ -8,7 +8,7 @@ An Online Quiz System built with Laravel. This system allows teachers to create 
 - Vlad
 - Jenelle
 
-## Live Demo / Deployed using Render
+## Live Demo
 
 https://online-quiz-system-nci4.onrender.com/
 
