@@ -9,6 +9,7 @@ RUN apt-get update && apt-get install -y \
     libicu-dev \
     libxml2-dev \
     libpq-dev \
+    libsqlite3-dev \
     && docker-php-ext-install pdo_mysql pdo_pgsql pdo_sqlite zip intl dom \
     && a2enmod rewrite \
     && rm -rf /var/lib/apt/lists/*
