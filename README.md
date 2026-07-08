@@ -4,9 +4,9 @@ An Online Quiz System built with Laravel. This system allows teachers to create 
 
 ## Developers
 
-- Jean
-- Vlad
-- Jenelle
+- Jean S. Gamba
+- Vladilyn Ranola
+- Jenelle M. Sabal
 
 ## Live Demo
 
