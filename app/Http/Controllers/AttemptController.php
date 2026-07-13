@@ -96,94 +96,136 @@ class AttemptController extends Controller
     }
 
     public function complete(Request $request, Attempt $attempt)
-    {
-        abort_unless($attempt->student_id === Auth::id(), 403);
+{
+    abort_unless($attempt->student_id === Auth::id(), 403);
 
-        if ($attempt->status === 'completed') {
-            return redirect()->route('attempts.result', $attempt)->with('success', 'This quiz was already submitted.');
-        }
-
-        $attempt->load('quiz.questions.options');
-        $quiz = $attempt->quiz;
-        $answers = $request->input('answers', []);
-
-        $questionIds = $quiz->questions->pluck('id')->map(fn ($id) => (string) $id)->all();
-        $missing = [];
-        foreach ($questionIds as $questionId) {
-            if (! array_key_exists($questionId, $answers) || blank($answers[$questionId])) {
-                $missing[] = $questionId;
-            }
-        }
-
-        if (count($missing) > 0) {
-            return back()->withInput()->with('error', 'Please answer all questions before submitting.');
-        }
-
-        foreach ($answers as $questionId => $answerValue) {
-            $question = $quiz->questions->firstWhere('id', (int) $questionId);
-            if (! $question) {
-                continue;
-            }
-
-            DB::table('attempt_question')
-                ->where('attempt_id', $attempt->id)
-                ->where('question_id', $question->id)
-                ->delete();
-
-            $selectedOptionIds = is_array($answerValue) ? $answerValue : [$answerValue];
-            $selectedOptionIds = collect($selectedOptionIds)
-                ->filter(fn ($id) => ! blank($id))
-                ->map(fn ($id) => (int) $id)
-                ->unique()
-                ->values()
-                ->all();
-
-            foreach ($selectedOptionIds as $optionId) {
-                DB::table('attempt_question')->insert([
-                    'attempt_id' => $attempt->id,
-                    'question_id' => $question->id,
-                    'option_id' => $optionId,
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ]);
-            }
-        }
-
-        $totalQuestions = $quiz->questions->count();
-        $correctAnswers = 0;
-
-        $userAnswers = DB::table('attempt_question')
-            ->where('attempt_id', $attempt->id)
-            ->get()
-            ->groupBy('question_id')
-            ->map(fn ($rows) => $rows->pluck('option_id')->map(fn ($id) => (int) $id)->unique()->values()->all());
-
-        foreach ($quiz->questions as $question) {
-            $selectedOptionIds = collect($userAnswers->get($question->id, []))->map(fn ($id) => (int) $id)->sort()->values()->all();
-            $correctOptionIds = $question->options->where('is_correct', true)->pluck('id')->map(fn ($id) => (int) $id)->sort()->values()->all();
-
-            if ($correctOptionIds && $selectedOptionIds === $correctOptionIds) {
-                $correctAnswers++;
-            }
-        }
-
-        $scorePercentage = $totalQuestions > 0 ? round(($correctAnswers / $totalQuestions) * 100) : 0;
-        $isPassed = $scorePercentage >= $quiz->passing_score;
-
-        $attempt->update([
-            'score' => $scorePercentage,
-            'total_score' => $correctAnswers,
-            'is_passed' => $isPassed,
-            'status' => 'completed',
-            'completed_at' => now(),
-        ]);
-
-        if ($request->wantsJson() || $request->is('api/*')) {
-            return response()->json($attempt->fresh('quiz'));
-        }
-
-        return redirect()->route('attempts.result', $attempt)->with('success', 'Quiz successfully submitted!');
+    if ($attempt->status === 'completed') {
+        return redirect()->route('attempts.result', $attempt)
+            ->with('success', 'This quiz was already submitted.');
     }
+
+    $attempt->load('quiz.questions.options');
+    $quiz = $attempt->quiz;
+    $answers = $request->input('answers', []);
+
+    // Check if all questions are answered
+    foreach ($quiz->questions as $question) {
+        if (!array_key_exists($question->id, $answers) || blank($answers[$question->id])) {
+            return back()
+                ->withInput()
+                ->with('error', 'Please answer all questions before submitting.');
+        }
+    }
+
+    // Save answers
+    foreach ($answers as $questionId => $answerValue) {
+
+        $question = $quiz->questions->firstWhere('id', (int)$questionId);
+
+        if (!$question) {
+            continue;
+        }
+
+        DB::table('attempt_question')
+            ->where('attempt_id', $attempt->id)
+            ->where('question_id', $question->id)
+            ->delete();
+
+        $selectedOptionIds = is_array($answerValue)
+            ? $answerValue
+            : [$answerValue];
+
+        foreach ($selectedOptionIds as $optionId) {
+
+            DB::table('attempt_question')->insert([
+                'attempt_id' => $attempt->id,
+                'question_id' => $question->id,
+                'option_id' => $optionId,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        }
+    }
+
+    // Get saved answers
+    $userAnswers = DB::table('attempt_question')
+        ->where('attempt_id', $attempt->id)
+        ->get()
+        ->groupBy('question_id')
+        ->map(function ($rows) {
+            return $rows->pluck('option_id')
+                ->map(fn($id) => (int)$id)
+                ->unique()
+                ->values();
+        });
+
+    $totalQuestions = $quiz->questions->count();
+    $correctAnswers = 0;
+
+    foreach ($quiz->questions as $question) {
+
+        $selectedOptionIds = collect($userAnswers->get($question->id, []))
+            ->map(fn($id) => (int)$id)
+            ->unique()
+            ->values();
+
+        $correctOptionIds = $question->options
+            ->where('is_correct', true)
+            ->pluck('id')
+            ->map(fn($id) => (int)$id)
+            ->values();
+
+        $correctCount = $correctOptionIds->count();
+
+        if ($correctCount == 0) {
+            continue;
+        }
+
+        // SINGLE CHOICE
+        if ($correctCount == 1) {
+
+            if (
+                $selectedOptionIds->count() == 1 &&
+                $selectedOptionIds->first() == $correctOptionIds->first()
+            ) {
+                $correctAnswers += 1;
+            }
+
+            continue;
+        }
+
+        // MULTIPLE SELECT (PARTIAL SCORING)
+
+        $matched = $selectedOptionIds
+            ->intersect($correctOptionIds)
+            ->count();
+
+        $wrongSelected = $selectedOptionIds
+            ->diff($correctOptionIds)
+            ->count();
+
+        // No points kapag may maling napili
+        if ($wrongSelected == 0) {
+            $correctAnswers += $matched / $correctCount;
+        }
+    }
+
+    $scorePercentage = $totalQuestions > 0
+        ? round(($correctAnswers / $totalQuestions) * 100, 2)
+        : 0;
+
+    $attempt->update([
+        'score' => $scorePercentage,
+        'total_score' => round($correctAnswers, 2),
+        'is_passed' => $scorePercentage >= $quiz->passing_score,
+        'status' => 'completed',
+        'completed_at' => now(),
+    ]);
+
+    return redirect()
+        ->route('attempts.result', $attempt)
+        ->with('success', 'Quiz successfully submitted!');
+}
 
     public function show(Attempt $attempt, Request $request)
     {
