@@ -34,7 +34,8 @@
             @else
                 <form id="quizForm" action="{{ route('attempts.complete', $attempt) }}" method="POST" class="space-y-5" onsubmit="return validateCheckboxQuestions()">
                     @csrf
-                    @foreach($quiz->questions as $question)
+                    @foreach($quiz->questions->shuffle() as $question) 
+
                         <div class="bg-white rounded-2xl shadow p-6" data-question-id="{{ $question->id }}" data-checkbox-question="{{ (($question->question_type ?? $question->type) === 'multiple_choice' && ($question->answer_mode ?? 'radio') === 'checkbox') ? '1' : '0' }}">
                             <h3 class="font-bold text-slate-900 mb-4">{{ $loop->iteration }}. {{ $question->question_text }}</h3>
 
@@ -50,7 +51,7 @@
                                     @if($isCheckboxQuestion)
                                         <p class="text-sm text-blue-700 bg-blue-50 border border-blue-200 rounded-lg p-3 mb-2">Select all correct answers. This question uses checkboxes.</p>
                                     @endif
-                                    @foreach($question->options as $option)
+                                    @foreach($question->options->shuffle() as $option)
                                         <label class="flex items-center gap-3 border border-slate-200 rounded-lg p-3 hover:bg-slate-50 cursor-pointer">
                                             @if($isCheckboxQuestion)
                                                 <input type="checkbox" name="answers[{{ $question->id }}][]" value="{{ $option->id }}" class="rounded text-indigo-600 focus:ring-indigo-500" {{ in_array($option->id, array_map('intval', $oldAnswerArray)) ? 'checked' : '' }}>
