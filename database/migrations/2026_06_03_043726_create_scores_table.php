@@ -15,8 +15,8 @@ return new class extends Migration
             $table->text('student_answer')->nullable();
             $table->text('user_answer')->nullable();
             $table->boolean('is_correct')->default(false);
-            $table->integer('points')->default(0);
-            $table->integer('points_earned')->default(0);
+            $table->decimal('points')->default(0);
+            $table->decimal('points_earned')->default(0);
             $table->timestamps();
         });
     }
