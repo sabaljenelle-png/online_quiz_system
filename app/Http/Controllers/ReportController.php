@@ -29,11 +29,13 @@ class ReportController extends Controller
     }
 
     public function exportQuizResultsPDF(Quiz $quiz)
-    {
-        $quiz->load(['attempts.student', 'questions.options']);
-        $pdf = Pdf::loadView('reports.scores', compact('quiz'));
-        return $pdf->download('quiz-' . $quiz->id . '-results.pdf');
-    }
+{
+    $quiz->load(['attempts.student']);
+
+    $pdf = Pdf::loadView('reports.scores-pdf', compact('quiz'));
+
+    return $pdf->download('quiz-'.$quiz->id.'-results.pdf');
+}
 
     public function exportQuizResultsExcel(Quiz $quiz)
     {
