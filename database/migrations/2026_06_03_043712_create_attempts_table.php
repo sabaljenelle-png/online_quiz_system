@@ -14,8 +14,8 @@ return new class extends Migration
             $table->foreignId('quiz_id')->constrained('quizzes')->cascadeOnDelete();
             $table->timestamp('started_at')->nullable();
             $table->timestamp('completed_at')->nullable();
-            $table->decimal('score', 5, 2)->nullable();
-            $table->decimal('total_score', 5, 2)->default(0);
+            $table->decimal('score', 5, 2);
+            $table->decimal('total_score', 5, 2);
             $table->boolean('is_passed')->nullable();
             $table->string('status')->default('in_progress');
             $table->timestamps();
