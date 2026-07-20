@@ -4,8 +4,10 @@
             @php
                 $durationMinutes = max(1, (int) round((float) $quiz->duration));
                 $durationSeconds = $durationMinutes * 60;
-                $elapsedSeconds = $attempt->started_at ? (int) floor($attempt->started_at->diffInSeconds(now())) : 0;
-                $remainingSeconds = max(0, (int) ($durationSeconds - $elapsedSeconds));
+                $elapsedSeconds = $attempt->started_at
+                    ? (int) $attempt->started_at->diffInSeconds(now())
+                    : 0;
+                $remainingSeconds = max(0, $durationSeconds - $elapsedSeconds);
             @endphp
 
             <div class="bg-white rounded-2xl shadow p-6 mb-6 sticky top-4 z-20 border border-slate-200">
