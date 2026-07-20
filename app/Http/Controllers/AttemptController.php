@@ -65,6 +65,9 @@ class AttemptController extends Controller
                 'quiz_id' => $quiz->id,
                 'status' => 'in_progress',
                 'started_at' => now(),
+                'score' => 0,
+                'total_score' => 0,
+                'is_passed' => false,
             ]);
         }
 
